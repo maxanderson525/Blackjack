@@ -6,15 +6,18 @@ public class Player {
 
     protected Strategy strategy;
     protected ArrayList<Card> hand;
+    protected float bettingUnits;
 
     public Player() {
         this.strategy = new BasicStrategy();
         hand = new ArrayList<Card>();
+        bettingUnits = 0;
     }
 
     public Player(Strategy strategy) {
         this.strategy = strategy;
         hand = new ArrayList<Card>();
+        bettingUnits = 0;
     }
 
     public void addCardToHand(Card card) {
@@ -62,5 +65,13 @@ public class Player {
 
     public void clearHand() {
         hand.clear();
+    }
+
+    public void updateBettingUnits(float difference) {
+        bettingUnits += difference;
+    }
+
+    public float getBettingUnits() {
+        return bettingUnits;
     }
 }

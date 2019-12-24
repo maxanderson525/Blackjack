@@ -12,8 +12,26 @@ public class BasicStrategy extends Strategy {
 
         if (!isSoft) {
             // hard total
-            if (total <= 11) {
+            if (total < 9) {
                 return Action.HIT;
+            } else if (total == 9) {
+                if (upCard.getRank() >= 3 && upCard.getRank() <= 6) {
+                    return Action.DOUBLE;
+                } else {
+                    return Action.HIT;
+                }
+            } else if (total == 10) {
+                if (upCard.getRank() >= 2 && upCard.getRank() <= 9) {
+                    return Action.DOUBLE;
+                } else {
+                    return Action.HIT;
+                }
+            } else if (total == 11) {
+                if (upCard.getRank() >= 2) {
+                    return Action.DOUBLE;
+                } else {
+                    return Action.HIT;
+                }
             } else if (total == 12) {
                 if (upCard.getRank() > 3 && upCard.getRank() < 7) {
                     return Action.STAY;

@@ -74,6 +74,7 @@ public class GameManager {
             done = true;
         }
 
+        boolean doubled = false;
         boolean playerDone = false;
         while (!done && !playerDone) {
             Action playerAction = getPlayerDecision(upCard);
@@ -86,7 +87,17 @@ public class GameManager {
                     playerDone = true;
                     done = true;
                 }
-            } // TODO: add double, split
+            } else if (playerAction == Action.DOUBLE) {
+                hitPlayer();
+                doubled = true;
+                playerDone = true;
+                if(player.isBust()) {
+                    result = HandResult.DOUBLE_LOSE;
+                    done = true;
+                }
+            }
+
+            // TODO: add double, split
         }
 
         boolean dealerDone = false;
@@ -97,7 +108,7 @@ public class GameManager {
             } else {
                 hitDealer();
                 if (dealer.isBust()) {
-                   result = HandResult.WIN;
+                   result = (doubled) ? HandResult.DOUBLE_WIN : HandResult.WIN;
                    dealerDone = true;
                    done = true;
                 }
@@ -109,11 +120,11 @@ public class GameManager {
             int dealerTotal = dealer.getHandTotal().getKey();
             log("\nPlayer ended with " + playerTotal + "\nDealer ended with " + dealerTotal);
             if (playerTotal > dealerTotal) {
-               result = HandResult.WIN;
+               result = (doubled) ? HandResult.DOUBLE_WIN : HandResult.WIN;
             } else if (playerTotal == dealerTotal) {
                 result = HandResult.PUSH;
             } else {
-                result = HandResult.LOSE;
+                result = (doubled) ? HandResult.DOUBLE_LOSE : HandResult.LOSE;
             }
         }
         log("Result of game: " + result);
@@ -121,23 +132,58 @@ public class GameManager {
     }
 
     public void simulateHands(int num) {
+        int longestStreak = 0;
+        int currentStreak = 0;
+        int longestLosingStreak = 0;
+        int currentLosingStreak = 0;
         int totalWins = 0;
         int totalPushes = 0;
         int totalBlackjacks = 0;
+        int doubleWins = 0;
+        int doubleLosses = 0;
         long start = System.currentTimeMillis();
         for (int i = 0; i < num; i ++) {
             HandResult result = playHand();
             if (result == HandResult.WIN) {
+                currentStreak++;
+                currentLosingStreak = 0;
                 totalWins++;
+                player.updateBettingUnits(1);
             } else if (result == HandResult.BLACKJACK_WIN) {
+                currentStreak++;
+                currentLosingStreak = 0;
                 totalWins++;
                 totalBlackjacks++;
+                player.updateBettingUnits(1.5f);
+            } else if (result == HandResult.DOUBLE_WIN) {
+                currentStreak++;
+                currentLosingStreak = 0;
+                totalWins++;
+                doubleWins++;
+                player.updateBettingUnits(2);
             } else if (result == HandResult.BLACKJACK_PUSH) {
                 totalPushes++;
                 totalBlackjacks++;
             } else if (result == HandResult.PUSH) {
                 totalPushes++;
+            } else {
+                currentStreak = 0;
+                currentLosingStreak++;
+                if (result == HandResult.DOUBLE_LOSE) {
+                    doubleLosses++;
+                    player.updateBettingUnits(-2);
+                } else {
+                    player.updateBettingUnits(-1);
+                }
             }
+
+            if (currentStreak > longestStreak) {
+                longestStreak = currentStreak;
+            }
+            if (currentLosingStreak > longestLosingStreak) {
+                longestLosingStreak = currentLosingStreak;
+            }
+
             resetPlayers();
         }
         long end = System.currentTimeMillis();
@@ -145,6 +191,12 @@ public class GameManager {
         System.out.println("Win Percentage: " + (((float)totalWins / num) * 100) + "%");
         System.out.println("Blackjack Percentage: " + (((float)totalBlackjacks / num) * 100) + "%");
         System.out.println("Push Percentage: " + (((float)totalPushes / num) * 100) + "%");
+        if (doubleLosses + doubleWins != 0) {
+            System.out.println("Win to Loss Ratio on Double: " + (((float) doubleWins / (doubleLosses + doubleWins)) * 100) + "%");
+        }
+        System.out.println("Longest Win Streak: " + longestStreak);
+        System.out.println("Longest Losing Streak: " + longestLosingStreak);
+        System.out.println("Net Betting Units at End: " + player.getBettingUnits());
     }
 
     public void resetPlayers() {
@@ -158,7 +210,7 @@ public class GameManager {
 
     public static void main(String[] args) {
         GameManager gm = new GameManager(4, new Dealer(), new Player());
-        gm.simulateHands(10000000);
+        gm.simulateHands(20);
     }
 
 }
